@@ -1,0 +1,159 @@
+/* preview/preview.css */
+
+body {
+  background: #525659;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.toolbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 80px;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  z-index: 100;
+}
+
+.toolbar .group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border-right: 1px solid #eee;
+}
+
+/* 输入框样式 */
+.title-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s;
+}
+input[type="number"] {
+  font-weight: bold;   /* 文本加粗 */
+  font-size: 14px;     /* 字号为12px */
+  height: auto; 
+  width: 100%;
+  padding: 2px 0px;
+}
+.title-input:focus {
+  border-color: #40a9ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+.toolbar .group:last-child {
+  border-right: none;
+}
+
+.toolbar button {
+  padding: 6px 14px;
+  border: 1px solid #d9d9d9;
+  background: white;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.toolbar button:hover {
+  border-color: #40a9ff;
+  color: #40a9ff;
+}
+
+.toolbar button.active {
+  background: #e6f7ff;
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+.toolbar button.primary {
+  background: #1890ff;
+  color: white;
+  border: none;
+}
+.toolbar button.primary:hover {
+  background: #40a9ff;
+}
+
+.toolbar button:disabled {
+  background: #f5f5f5;
+  color: #ccc;
+  border-color: #d9d9d9;
+  cursor: not-allowed;
+}
+
+/* 红色警告按钮样式，用于去尾 */
+.toolbar button.danger {
+  color: #ff4d4f;
+  border-color: #ff4d4f;
+}
+.toolbar button.danger:hover {
+  background: #fff1f0;
+}
+
+#canvas-wrapper {
+  margin-top: 80px;
+  margin-bottom: 40px;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  /* 关键：让容器决定最大宽度 */
+  max-width: 90%; 
+  overflow: hidden; /* 防止溢出 */
+  display: flex;
+  justify-content: center;
+}
+
+canvas {
+  display: block;
+  /* 关键：预览时自适应宽度，打印时会自动恢复原尺寸 */
+  max-width: 100%;
+  height: auto; 
+}
+
+
+/* 打印样式优化 */
+@media print {
+  @page {
+    /* 关键：强制设置打印纸张边距为 0，让内容铺满 */
+    margin: 0; 
+    size: auto; /* 允许由 JS 动态控制是 A4 portrait 还是 landscape */
+  }
+
+  body {
+    background: white;
+    display: block;
+    margin: 0;
+    padding: 0;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  #canvas-wrapper {
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    max-width: none;
+    width: 100%;
+    border: none;
+  }
+
+  canvas {
+    max-width: none;
+    width: 100%;
+    /* 关键：防止浏览器试图保留纵横比而产生的微小像素偏差 */
+    display: block; 
+  }
+}

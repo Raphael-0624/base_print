@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "打印Anything",
+  "version": "1.5",
+  "description": "优雅的打印一切",
+  "author": "DT",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "clipboardRead" 
+  ],
+  "icons": {
+    "16": "assets/icon.png",
+    "32": "assets/icon.png",
+    "48": "assets/icon.png",
+    "128": "assets/icon.png"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "打印表格",
+    "default_icon": {
+      "16": "assets/icon.png",
+      "32": "assets/icon.png",
+      "48": "assets/icon.png",
+      "128": "assets/icon.png"
+    }
+  },
+  "background": {
+    "service_worker": "background/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.feishu.cn/*", "*://*.larksuite.com/*"],
+      "css": ["content/content.css"],
+      "js": ["content/content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

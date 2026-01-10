@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多维表格还原</title>
+    <!-- 修改引用为本地库 -->
+    <script src="libs/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary: #3370ff;
+            --bg-body: #f5f6f7;
+            --border: #c4c8d0; 
+            --border-light: #dce1e8;
+            --text-main: #1f2329;
+            --text-gray: #646a73;
+            
+            /* 标签色值 */
+            --tag-bg-0: #e1eaff; --tag-text-0: #1a53cc;
+            --tag-bg-1: #ceead6; --tag-text-1: #1e705e;
+            --tag-bg-2: #ffece1; --tag-text-2: #b54d14;
+            --tag-bg-3: #fceea7; --tag-text-3: #8a5a06;
+            --tag-bg-4: #fbdde2; --tag-text-4: #b0243a;
+            --tag-bg-5: #e8eafc; --tag-text-5: #424e94;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-body);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-main);
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 顶部控制区 */
+        .header {
+            background: #fff;
+            padding: 16px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            flex-shrink: 0;
+            margin-bottom: 16px;
+        }
+        
+        .header-top { display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px; }
+        .title-box h1 { margin: 0 0 8px 0; font-size: 18px; font-weight: 600; }
+        .guide-text { font-size: 12px; color: #8f959e; line-height: 1.5; margin: 0; }
+        .guide-text span { background: #f0f0f0; padding: 1px 4px; border-radius: 4px; color: #333; }
+        
+        .controls { display: flex; align-items: center; gap: 12px; }
+        
+        /* 工具栏 */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding-top: 12px;
+            border-top: 1px solid #f0f0f0;
+            font-size: 13px;
+            flex-wrap: wrap;
+        }
+        
+        .tool-section { display: flex; align-items: center; gap: 8px; }
+        .tool-label { color: var(--text-gray); font-weight: 500; }
+        .select-style { padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; outline: none; font-size: 13px; max-width: 140px; }
+        
+        /* 分组胶囊 */
+        .group-tags { display: flex; gap: 8px; align-items: center; }
+        .group-pill {
+            display: flex; align-items: center; gap: 6px;
+            background: #e1eaff; color: #3370ff;
+            padding: 2px 8px; border-radius: 12px; font-weight: 500; font-size: 12px;
+        }
+        .group-remove { cursor: pointer; opacity: 0.6; display: flex; font-weight: bold; }
+        .group-remove:hover { opacity: 1; }
+
+        .btn-action {
+            background: var(--primary); color: white; border: none; padding: 0 16px; height: 32px;
+            border-radius: 6px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+        }
+        .btn-action:hover { background: #285ecf; }
+
+        /* 核心表格区 */
+        #render-zone {
+            flex: 1;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+
+        .table-scroll-container {
+            flex: 1; overflow: auto; position: relative; width: 100%; padding-bottom: 8px;
+        }
+
+        #empty-mask {
+            position: absolute; inset: 0; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; background: #fff; z-index: 50;
+        }
+
+        /* 表格样式 */
+        table { border-spacing: 0; table-layout: fixed; width: 100%; min-width: 100%; border-collapse: separate; font-size: 14px; }
+        td, th { box-sizing: border-box; vertical-align: top; position: relative; }
+
+        /* 首列冻结 */
+        th:first-child, td:first-child { position: sticky; left: 0; z-index: 10; border-right: 1px solid #b0b4bb; }
+        thead th { position: sticky; top: 0; z-index: 20; }
+        thead th:first-child { z-index: 30; }
+
+        .capturing th, .capturing td { position: static !important; }
+        .capturing .col-resizer { display: none !important; }
+
+        th {
+            background: #f5f6f7; color: #646a73; font-weight: 500; font-size: 13px; text-align: left;
+            padding: 8px 12px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border);
+            white-space: nowrap; user-select: none; vertical-align: middle;
+            min-width: 10px;
+        }
+        td {
+            background: #fff; padding: 4px 12px;
+            border-bottom: 1px solid var(--border-light); border-right: 1px solid var(--border-light);
+            color: var(--text-main); white-space: pre-wrap; word-break: break-word; line-height: 1.4; vertical-align: middle;
+            min-width: 10px;
+        }
+
+        /* 分组标题行样式 */
+        .group-row td {
+            background-color: #fcfcfd;
+            font-weight: 600;
+            color: var(--text-main);
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            position: sticky; z-index: 5;
+            display: table-cell;
+        }
+        .group-content-wrapper { display: flex; align-items: center; }
+        /* .group-expander { display: inline-block; width: 20px; text-align: center; color: #8f959e; margin-right: 4px; font-size: 10px; } */
+
+        /* 修复：数字列移除特殊字体，使用默认字体 */
+        .cell-number { text-align: right; }
+
+        /* 组件样式 */
+        .col-resizer { position: absolute; right: 0; top: 0; bottom: 0; width: 6px; cursor: col-resize; z-index: 40; }
+        .col-resizer:hover { background: var(--primary); }
+
+        .bit-tag { 
+            display: inline-flex; align-items: center; justify-content: center; 
+            padding: 2px 8px; border-radius: 12px; font-size: 13px; 
+            margin: 0 4px 4px 0; white-space: nowrap; font-weight: 500; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+        }
+        .bit-user { 
+            display: inline-flex; align-items: center; background: #eff0f1; 
+            padding: 2px 8px 2px 8px; border-radius: 12px; margin-right: 4px; margin-bottom: 4px; font-size: 13px; 
+        }
+        /* .bit-user-avatar { 
+            width: 18px; height: 18px; border-radius: 50%; background: #ccc; 
+            color: #131212; text-align: center; line-height: 18px; font-size: 10px; margin-right: 4px; 
+        } */
+
+        /* 颜色类 */
+        .c-0 { background: var(--tag-bg-0); color: var(--tag-text-0); }
+        .c-1 { background: var(--tag-bg-1); color: var(--tag-text-1); }
+        .c-2 { background: var(--tag-bg-2); color: var(--tag-text-2); }
+        .c-3 { background: var(--tag-bg-3); color: var(--tag-text-3); }
+        .c-4 { background: var(--tag-bg-4); color: var(--tag-text-4); }
+        .c-5 { background: var(--tag-bg-5); color: var(--tag-text-5); }
+
+        /* Popover */
+        .popover {
+            position: fixed; background: #fff; border-radius: 8px; 
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15); padding: 12px; 
+            display: none; z-index: 1000; width: 200px; border: 1px solid #eff0f1;
+        }
+        .popover::after { 
+            content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); 
+            border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #fff; 
+        }
+        .popover-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .popover-input { width: 60px; padding: 4px 8px; border: 1px solid #dee0e3; border-radius: 4px; font-size: 13px; text-align: right; }
+        .btn-delete { width: 100%; padding: 6px; background: #fff; color: #d03d54; border: 1px solid #fbdde2; border-radius: 4px; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .btn-delete:hover { background: #fff5f6; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-top">
+            <div class="title-box">
+                <h1>多维表格还原</h1>
+                <p class="guide-text">
+                    • 粘贴: 点击页面按 <span>Ctrl + V</span><br>
+                    • 调整: 鼠标悬停表头右侧可 <span>拖拽列宽</span>，点击表头可 <span>隐藏列</span><br>
+                    • 视图: 支持 <span>多级分组</span> 和 <span>父子层级</span>
+                </p>
+            </div>
+            <div class="controls">
+                <button class="btn-action" id="btn-save-img">导出图片</button>
+                <button class="btn-action" id="btn-print" style="margin-left: 10px;">去打印</button>
+            </div>
+        </div>
+
+        <div class="toolbar" id="toolbar" style="display:none;">
+            <!-- 分组工具 -->
+            <div class="tool-section">
+                <span class="tool-label">分组</span>
+                <div class="group-tags" id="active-groups"></div>
+                <select id="add-group-select" class="select-style">
+                    <option value="" disabled selected>选择分组字段</option>
+                </select>
+            </div>
+
+            <div style="width:1px; height:20px; background:#ddd; margin:0 10px;"></div>
+
+            <!-- 父子记录工具 -->
+            <div class="tool-section">
+                <span class="tool-label">父记录</span>
+                <select id="parent-col-select" class="select-style">
+                    <option value="">父记录字段</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div id="render-zone">
+        <div id="empty-mask">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ddd" stroke-width="1.5" style="margin-bottom:16px;">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="3" y1="9" x2="21" y2="9"></line>
+                <line x1="9" y1="21" x2="9" y2="9"></line>
+            </svg>
+            <!-- <p style="color:#999;">按 Ctrl + V 粘贴飞书多维表格数据</p> -->
+             <p style="color:#999;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;"> 按 <kbd style="border:1px solid #ccc;border-radius:3px;padding:2px 6px;font-size:0.9em;font-family:inherit;background:linear-gradient(to bottom,#f9f9f9,#e9e9e9);box-shadow:0 2px 0 #c9c9c9;margin:0 2px;">Ctrl</kbd> + <kbd style="border:1px solid #ccc;border-radius:3px;padding:2px 6px;font-size:0.9em;font-family:inherit;background:linear-gradient(to bottom,#f9f9f9,#e9e9e9);box-shadow:0 2px 0 #c9c9c9;margin:0 2px;">V</kbd> 粘贴飞书多维表格数据 </p>
+        </div>
+        <div class="table-scroll-container">
+            <div id="table-content"></div>
+        </div>
+    </div>
+
+    <!-- 气泡 -->
+    <div id="col-popover" class="popover">
+        <div class="popover-row">
+            <span style="font-size:12px; color:#646a73;">列宽 (px)</span>
+            <input type="number" id="col-width-input" class="popover-input">
+        </div>
+        <div class="popover-row">
+            <button id="btn-delete-col" class="btn-delete">🚫 隐藏此列</button>
+        </div>
+    </div>
+
+    <script src="paste_table.js"></script>
+</body>
+</html>

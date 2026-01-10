@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!-- Author: DT -->
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>打印预览</title>
+  <link rel="stylesheet" href="preview.css">
+  <script src="../libs/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div class="toolbar no-print">
+    <!-- 新增：标题输入 -->
+    <div class="group" style="flex-grow: 1; max-width: 300px;">
+      <input type="text" id="inputTitle" placeholder="输入标题（可选）" class="title-input">
+    </div>
+
+    <div class="group">
+      <label>排版</label>
+      <button id="btnPortrait" class="active">纵向</button>
+      <button id="btnLandscape">横向</button>
+    </div>
+    
+    <div class="group">
+      <label>缩放</label>
+      <input type="number" id="inputScale" value="100" style="width: 60px; text-align: center;" title="缩放百分比">
+    </div>
+
+    <div class="group">
+      <label>边距</label>
+      <input type="number" id="inputMarginH" value="50" style="width: 40px; text-align: center;" title="左右边距">
+      <input type="number" id="inputMarginV" value="50" style="width: 40px; text-align: center;" title="上下边距">
+    </div>
+
+    <div class="group">
+      <label>底部裁切</label>
+      <input type="number" id="inputBottomCrop" value="0" style="width: 40px; text-align: center;" title="底部裁切高度">
+    </div>
+
+    <div class="group">
+      <label></label>
+      <button id="btnRemoveTail" class="danger">去尾</button>
+      <button id="btnRestore" disabled>恢复</button>
+    </div>
+
+    <div class="group">
+      <button id="btnUpload">追加图片</button>
+      <button id="btnPrint">打印</button>
+      <button id="btnPdf" class="primary">PDF</button>
+    </div>
+  </div>
+
+  <div id="canvas-wrapper">
+    <!-- Canvas 渲染区域 -->
+  </div>
+
+  <script src="preview.js"></script>
+</body>
+</html>
